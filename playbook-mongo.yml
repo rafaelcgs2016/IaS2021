@@ -1,0 +1,55 @@
+- hosts: remoto
+  gather_facts: True
+  
+  tasks:
+  - name: Git checkout do projeto
+    git:
+      repo: 'https://github.com/LeonardoDG2084/iaac_slacko-api.git'
+      dest: /opt/slacko-api
+      version: master
+      
+  - name: Instalando mongodb
+    apt:
+      name: mongodb
+      update_cache: yes
+      state: present
+    
+  - name: Enable and start mongodb
+    systemd:
+      state: started
+      name: mongodb
+      enabled: yes
+
+  - name: Instalando Python
+    apt:
+      name: python3-pip
+      update_cache: yes
+      state: present
+
+  - name: Install Python Requiments
+    pip:
+      requirements: /opt/slacko-api/requeriments.txt    
+  
+  - name: copy files to directory
+    copy:
+      src: "{{ item }}"
+      dest: "{{ path_api }}"
+      mode: '0755'
+      remote_src: yes
+    with_items:
+      - /opt/main.py
+ 
+  - name: 'copy conf file to directory'
+    template:
+      src: templates/slacko-api.sh
+      dest: "{{ path_api }}"
+      mode: '0755'
+
+  - name: Start Service
+    copy:
+      src: slacko-api.services
+      dest: /etc/systemd/system/
+      owner: root
+      group: root
+    notify:
+     - Start slacko-api.service     
